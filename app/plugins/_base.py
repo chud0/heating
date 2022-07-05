@@ -1,7 +1,7 @@
 import logging
 import time
 from collections import defaultdict
-from queue import Queue, Empty
+from queue import Empty, Queue
 from threading import Thread
 from typing import Callable
 
@@ -49,6 +49,7 @@ def handle_event(event_class: BaseEvent):
     def inner(plugin: BaseEventPlugin, handler: Callable):
         plugin.add_event_handler(event_class, handler)
         return handler
+
     return inner
 
 

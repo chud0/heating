@@ -7,22 +7,23 @@ export PYTHONPATH := $(CURDIR)/app
 run: $(VENV)/bin/activate
 	$(PYTHON) app.py
 
-$(VENV)/bin/activate: requirements.txt dev_requirements.txt
-	python3 -m venv $(VENV)
-	$(PIP) install -r requirements.txt
-	$(PIP) install -r dev_requirements.txt
-
 format: $(VENV)/bin/activate
-	$(PYTHON) -m unittest discover
+	$(PYTHON) -m isort .
+	$(PYTHON) -m black --target-version py310 --skip-string-normalization --line-length 120 app
 
 test: $(VENV)/bin/activate
 	$(PYTHON) -m unittest discover
 
 coverage: $(VENV)/bin/activate
-	coverage run -m unittest discover
-	coverage report -m
-	coverage html
+	$(PYTHON) -m coverage run -m unittest discover
+	$(PYTHON) -m coverage report -m
+	$(PYTHON) -m coverage html
 	xdg-open htmlcov/index.html
+
+$(VENV)/bin/activate: requirements.txt dev_requirements.txt
+	python3 -m venv $(VENV)
+	$(PIP) install -r requirements.txt
+	$(PIP) install -r dev_requirements.txt
 
 clean: clean-pyc clean-test
 
