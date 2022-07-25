@@ -92,13 +92,12 @@ def handle_event(event_class: Type[BaseEvent]):
 
 
 class BaseEventPlugin(BasePlugin, ABC):
-    event_handlers = defaultdict(list)
 
     def __init__(self, event_exchange: EventExchange, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.event_exchange = event_exchange
-        # self.event_handlers = defaultdict(list)  # todo
+        self.event_handlers = defaultdict(list)
 
     def _before_tick(self) -> None:
         while True:
