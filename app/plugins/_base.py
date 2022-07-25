@@ -92,7 +92,6 @@ def handle_event(event_class: Type[BaseEvent]):
 
 
 class BaseEventPlugin(BasePlugin, ABC):
-
     def __init__(self, event_exchange: EventExchange, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
