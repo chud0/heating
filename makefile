@@ -9,14 +9,14 @@ run: $(VENV)/bin/activate
 
 format: $(VENV)/bin/activate
 	$(PYTHON) -m isort .
-	$(PYTHON) -m black --target-version py310 --skip-string-normalization --line-length 120 app
+	$(PYTHON) -m black --target-version py35 --skip-string-normalization --line-length 120 app
 
 format_check: $(VENV)/bin/activate
 	@echo "##### Check imports format #####"
 	$(PYTHON) -m isort -c .
 
 	@echo "##### Check code format #####"
-	$(PYTHON) -m black --target-version py310 --skip-string-normalization --line-length 120 --check app
+	$(PYTHON) -m black --target-version py35 --skip-string-normalization --line-length 120 --check app
 
 test_code: $(VENV)/bin/activate
 	@echo "##### Check code tests #####"
