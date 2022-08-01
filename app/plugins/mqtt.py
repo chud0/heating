@@ -1,4 +1,10 @@
+"""
+todo: add special event on connect and disconnect
+todo: whether it is necessary to save messages for sending while the client is disconnected?
+todo: can work without connect to mqtt on __init__
+"""
 import logging
+import time
 
 import messages
 import paho.mqtt.client
@@ -21,8 +27,12 @@ class MqttPlugin(BaseEventPlugin):
 
         self.mqtt_client = paho.mqtt.client.Client()
         self.mqtt_client.on_connect = self.on_connect_callback
+        self.mqtt_client.on_disconnect = self.on_disconnect_callback
         self.mqtt_client.on_message = self.on_message_receive
-        self.mqtt_client.connect(mqtt_host)
+        self.mqtt_client.enable_logger(logger=logger)
+        self.mqtt_client.connect(mqtt_host, keepalive=10)
+
+        self._client_connected = False
 
     def _subscribe_event_handler(self, event: messages.events.MqttSubscribe):
         self._need_subscribe_to.append((event.topic, event.qos))
@@ -32,10 +42,16 @@ class MqttPlugin(BaseEventPlugin):
 
     def on_connect_callback(self, client, userdata, flags, rc):
         logger.info('Connected with result code %s', rc)
+        self._client_connected = True
+
+        self.client_subscribe()
+
+    def on_disconnect_callback(self, client, userdata, rc):
+        logger.error('Mqtt disconnected!!!')
+        self._client_connected = False
 
         self._need_subscribe_to = self._subscribed_to_topics.copy()
         self._subscribed_to_topics.clear()
-        self.client_subscribe()
 
     def on_message_receive(self, client, userdata, msg):
         topic, payload = msg.topic, msg.payload.decode()
@@ -58,6 +74,18 @@ class MqttPlugin(BaseEventPlugin):
             self.mqtt_client.publish(topic, payload.encode())
 
     def tick(self) -> None:
+        if not self._client_connected:
+            logger.warning('Mqtt client disconnected. Reconnect')
+            try:
+                self.mqtt_client.reconnect()
+            except ConnectionRefusedError:
+                logger.warning('Mqtt client not connected')
+                time.sleep(5)
+                return
+
+            time.sleep(1)
+            self.mqtt_client.loop()
+
         self.client_subscribe()
         self.send_messages()
 
@@ -71,7 +99,7 @@ from queue import Queue
 import logging
 import messages
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
 event_exchange = EventExchange(incoming_message_queue=Queue(), outgoing_message_queue=Queue())
 pl = MqttPlugin('127.0.0.1', event_exchange)
 pl.start()
