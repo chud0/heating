@@ -3,6 +3,7 @@ todo: add special event on connect and disconnect
 todo: whether it is necessary to save messages for sending while the client is disconnected?
 todo: can work without connect to mqtt on __init__
 """
+import datetime
 import logging
 import time
 
@@ -29,16 +30,23 @@ class MqttPlugin(BaseEventPlugin):
         self.mqtt_client.on_connect = self.on_connect_callback
         self.mqtt_client.on_disconnect = self.on_disconnect_callback
         self.mqtt_client.on_message = self.on_message_receive
-        self.mqtt_client.enable_logger(logger=logger)
         self.mqtt_client.connect(mqtt_host, keepalive=10)
+        self.mqtt_client.loop()
 
-        self._client_connected = False
+        self._client_connected = True
+        self._client_last_reconnect_dt = self.get_time()
+        self._reconnect_timeout = datetime.timedelta(seconds=10)
+        self._loop_need_count = 1
 
     def _subscribe_event_handler(self, event: messages.events.MqttSubscribe):
         self._need_subscribe_to.append((event.topic, event.qos))
 
     def _send_message_event_handler(self, event: messages.events.MqttMessageSend):
         self._need_send_messages.append((event.topic, event.payload))
+
+    @staticmethod
+    def get_time():
+        return datetime.datetime.utcnow()
 
     def on_connect_callback(self, client, userdata, flags, rc):
         logger.info('Connected with result code %s', rc)
@@ -47,7 +55,7 @@ class MqttPlugin(BaseEventPlugin):
         self.client_subscribe()
 
     def on_disconnect_callback(self, client, userdata, rc):
-        logger.error('Mqtt disconnected!!!')
+        logger.error('Mqtt disconnected!')
         self._client_connected = False
 
         self._need_subscribe_to = self._subscribed_to_topics.copy()
@@ -57,6 +65,7 @@ class MqttPlugin(BaseEventPlugin):
         topic, payload = msg.topic, msg.payload.decode()
         logger.info('Received message "%s" from topic "%s"', payload, topic)
         self.event_exchange.send_message(messages.events.MqttMessageReceived(topic, payload))
+        self._loop_need_count += 1
 
     def client_subscribe(self):
         while self._need_subscribe_to:
@@ -73,23 +82,37 @@ class MqttPlugin(BaseEventPlugin):
 
             self.mqtt_client.publish(topic, payload.encode())
 
+    def reconnect(self):
+        if self.get_time() - self._client_last_reconnect_dt < self._reconnect_timeout:
+            return
+
+        self._client_last_reconnect_dt = self.get_time()
+        logger.info('Mqtt client disconnected. Reconnect')
+        try:
+            self.mqtt_client.reconnect()
+        except ConnectionRefusedError:
+            logger.warning('Mqtt client not reconnected')
+            return
+
+        time.sleep(1)
+        self.mqtt_client.loop()
+
     def tick(self) -> None:
         if not self._client_connected:
-            logger.warning('Mqtt client disconnected. Reconnect')
-            try:
-                self.mqtt_client.reconnect()
-            except ConnectionRefusedError:
-                logger.warning('Mqtt client not connected')
-                time.sleep(5)
-                return
-
-            time.sleep(1)
-            self.mqtt_client.loop()
+            self.reconnect()
+            return
 
         self.client_subscribe()
         self.send_messages()
 
-        self.mqtt_client.loop()
+        self._mqtt_loop()
+
+    def _mqtt_loop(self):
+        while self._loop_need_count > 0:
+            self.mqtt_client.loop(timeout=0.1)
+            self._loop_need_count -= 1
+
+        self._loop_need_count += 1
 
 
 """
