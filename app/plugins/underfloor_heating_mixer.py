@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 
 import messages
+
 from ._base import BaseEventPlugin
 
 logger = logging.getLogger(__name__)
