@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class MqttPlugin(BaseEventPlugin):
-    def __init__(self, mqtt_host, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self._subscribed_to_topics = []
@@ -30,7 +30,7 @@ class MqttPlugin(BaseEventPlugin):
         self.mqtt_client.on_connect = self.on_connect_callback
         self.mqtt_client.on_disconnect = self.on_disconnect_callback
         self.mqtt_client.on_message = self.on_message_receive
-        self.mqtt_client.connect(mqtt_host, keepalive=10)
+        self.mqtt_client.connect(self.settings.mqtt_host, keepalive=10)
         self.mqtt_client.loop()
 
         self._client_connected = True

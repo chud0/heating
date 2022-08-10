@@ -60,6 +60,7 @@ class BasePlugin(Thread):
             time.sleep(self.tick_timeout)
 
     def stop(self):
+        logger.info('Stoping plugin %s', self)
         self.is_running = False
 
     def join(self, *args, **kwargs) -> None:
@@ -92,11 +93,13 @@ def handle_event(event_class: Type[BaseEvent]):
 
 
 class BaseEventPlugin(BasePlugin, ABC):
-    def __init__(self, event_exchange: EventExchange, *args, **kwargs):
+    def __init__(self, event_exchange: EventExchange, *args, settings=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.event_exchange = event_exchange
         self.event_handlers = defaultdict(list)
+
+        self.settings = settings
 
     def _before_tick(self) -> None:
         while True:

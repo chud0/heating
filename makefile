@@ -5,7 +5,7 @@ PIP = $(VENV)/bin/pip
 export PYTHONPATH := $(CURDIR)/app
 
 run: $(VENV)/bin/activate
-	$(PYTHON) app.py
+	$(PYTHON) app/main.py
 
 format: $(VENV)/bin/activate
 	$(PYTHON) -m isort .
