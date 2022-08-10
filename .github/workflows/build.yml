@@ -14,6 +14,7 @@ jobs:
         with:
           base_image: raspbian_lite:latest
           commands: |
+            apt-get update
             apt-get install python3-venv -y
             make build-full
       - name: Upload release image
