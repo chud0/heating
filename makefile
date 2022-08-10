@@ -42,6 +42,7 @@ coverage: $(VENV)/bin/activate
 
 $(VENV)/bin/activate: requirements.txt dev_requirements.txt
 	@echo "##### Create virtual env #####"
+	pip3 install virtualenv
 	python3 -m venv $(VENV)
 	@echo "##### Install requirements #####"
 	$(PIP) install -r requirements.txt
