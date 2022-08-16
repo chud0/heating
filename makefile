@@ -10,13 +10,6 @@ run: $(VENV)/bin/activate
 run-bin: dist/main
 	./dist/main
 
-dist/main: build
-
-build: $(VENV)/bin/activate
-	pyinstaller --clean --onefile --paths=app app/main.py
-
-build-full: clean test build
-
 format: $(VENV)/bin/activate
 	$(PYTHON) -m isort .
 	$(PYTHON) -m black --target-version py35 --skip-string-normalization --line-length 120 app
@@ -48,7 +41,7 @@ $(VENV)/bin/activate: requirements.txt dev_requirements.txt
 	$(PIP) install -r requirements.txt
 	$(PIP) install -r dev_requirements.txt
 
-clean: clean-pyc clean-test clean-build
+clean: clean-pyc clean-test
 
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -60,8 +53,3 @@ clean-test:
 	rm -f .coverage
 	rm -f coverage.xml
 	rm -fr htmlcov/
-
-clean-build:
-	rm -fr build/
-	rm -fr dist/
-	rm -f main.spec
