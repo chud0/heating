@@ -10,9 +10,45 @@ from plugins.underfloor_heating_mixer import UnderFloorHeatingMixerPlugin
 plugins_for_run = [MqttPlugin, UnderFloorHeatingMixerPlugin]
 
 
+# fixme: move to settings module
 class Settings:
     def __init__(self, mqtt_host):
         self.mqtt_host = mqtt_host
+        self.underfloor_heating_mixer = {
+            'main_mixer': {
+                'temp_topic': '',
+                'device_topic': '',
+                'target_temp': 23,
+            },
+            'slave_mixers': [
+                {
+                    'temp_topic': '',
+                    'device_topic': '',
+                    'target_temp': 23,
+                },
+                {
+                    'temp_topic': '',
+                    'device_topic': '',
+                    'target_temp': 23,
+                },
+                {
+                    'temp_topic': '',
+                    'device_topic': '',
+                    'target_temp': 23,
+                },
+                {
+                    'temp_topic': '',
+                    'device_topic': '',
+                    'target_temp': 23,
+                },
+                {
+                    'temp_topic': '',
+                    'device_topic': '',
+                    'target_temp': 23,
+                },
+            ],
+            'pump': {'device_topic': '', 'state_changed_timeout': 30},
+        }
 
 
 class PluginRunManager:
