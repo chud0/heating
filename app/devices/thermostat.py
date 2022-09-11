@@ -1,44 +1,54 @@
-from simple_pid import PID
+from messages import events
 
 
 class Thermostat:
-    P, I, D = 1, 0, 0
-
-    def __init__(self, target_temperature: float, hysteresis: float = 1):
+    def __init__(self, hardware_topic: str, target_temperature: float, hysteresis: float = 1):
+        self._hardware_topic = hardware_topic
         self.hysteresis = hysteresis
-        self.pid = PID(self.P, self.I, self.D, setpoint=target_temperature, output_limits=(0, 100), sample_time=None)
+        self.target_temperature = target_temperature
 
-        self.last_temperature = 0
+        self._last_temperature = 0
+        self._last_state = False  # ON or OFF device
 
-    def __call__(self, current_temperature: float, dt=None):
-        last_temperature, self.last_temperature = self.last_temperature, current_temperature
+        self.is_working = True
 
-        if abs(current_temperature - last_temperature) <= self.hysteresis or \
-                current_temperature > self.target_temperature:
-            if self.enabled:
-                self.stop()
-            return 0
+        self._cmd_turn_on, self._cmd_turn_off = True, False
+
+    def __call__(self, current_temperature: float):
+        result = []
+        if not self.is_working:
+            return result
+
+        target_temperature = self.target_temperature
+        if self._last_state:
+            # on getting hot now
+            target_temperature += self.hysteresis
+
+            if target_temperature >= current_temperature:
+                # nothing to do, hardware enabled now
+                return result
+
+            self._last_state = False
+            result.append(events.MqttMessageSend(topic=self._hardware_topic, payload=self._cmd_turn_off))
+
         else:
-            if not self.enabled:
-                self.start()
+            target_temperature -= self.hysteresis
 
-        return self.pid(input_=current_temperature, dt=dt)
+            if target_temperature <= current_temperature:
+                # nothing to do, hardware disabled now
+                return result
 
-    @property
-    def target_temperature(self):
-        return self.pid.setpoint
+            self._last_state = True
+            result.append(events.MqttMessageSend(topic=self._hardware_topic, payload=self._cmd_turn_on))
 
-    @target_temperature.setter
-    def target_temperature(self, value: float):
-        self.pid.setpoint = value
-        self.pid.reset()
+        return result
 
     def start(self):
-        self.pid.auto_mode = True
+        self.is_working = True
 
     def stop(self):
-        self.pid.auto_mode = False
+        self.is_working = False
 
     @property
     def enabled(self):
-        return self.pid.auto_mode
+        return self._last_state
