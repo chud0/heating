@@ -1,22 +1,23 @@
-from messages import events
+from messages.events import MqttMessageSend
+
+from ._base import BaseMqttDevice
 
 
-class Thermostat:
-    def __init__(self, hardware_topic: str, target_temperature: float, hysteresis: float = 1):
-        self._hardware_topic = hardware_topic
+class Thermostat(BaseMqttDevice):
+    def __init__(self, target_temperature: float, hysteresis: float = 1, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hysteresis = hysteresis
         self.target_temperature = target_temperature
 
         self._last_temperature = 0
         self._last_state = False  # ON or OFF device
 
-        self.is_working = True
+        self._enabled = True
 
-        self._cmd_turn_on, self._cmd_turn_off = True, False
-
-    def __call__(self, current_temperature: float):
+    def __call__(self, current_temperature: float) -> [MqttMessageSend]:
         result = []
-        if not self.is_working:
+        if not self._enabled:
             return result
 
         target_temperature = self.target_temperature
@@ -29,7 +30,7 @@ class Thermostat:
                 return result
 
             self._last_state = False
-            result.append(events.MqttMessageSend(topic=self._hardware_topic, payload=self._cmd_turn_off))
+            result.extend(self._build_messages_turn_off())
 
         else:
             target_temperature -= self.hysteresis
@@ -39,15 +40,18 @@ class Thermostat:
                 return result
 
             self._last_state = True
-            result.append(events.MqttMessageSend(topic=self._hardware_topic, payload=self._cmd_turn_on))
+            result.extend(self._build_messages_turn_on())
 
         return result
 
-    def start(self):
-        self.is_working = True
+    def start(self) -> [MqttMessageSend]:
+        # do not send messages now, only on need in process
+        super(Thermostat, self).start()
+        return []
 
-    def stop(self):
-        self.is_working = False
+    def stop(self) -> [MqttMessageSend]:
+        self._last_state = False
+        return super(Thermostat, self).stop()
 
     @property
     def enabled(self):

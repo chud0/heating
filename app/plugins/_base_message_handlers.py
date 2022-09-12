@@ -17,7 +17,7 @@ class BaseMqttMessagePlugin(BaseEventPlugin, ABC):
         self.add_event_handler(messages.events.MqttMessageReceived, self._mqtt_message_router_event_handler)
 
     def _mqtt_message_router_event_handler(self, event: messages.events.MqttMessageReceived):
-        logger.info('Handle event %s', event)
+        logger.debug('Handle event %s', event)
         for event_handler in self._mqtt_message_router_map[event.topic]:
             try:
                 event_handler(event)

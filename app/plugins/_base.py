@@ -4,7 +4,7 @@ from abc import ABC
 from collections import defaultdict
 from queue import Empty, Queue
 from threading import Thread
-from typing import Callable, Type
+from typing import Callable, List, Type
 
 from messages import BaseEvent
 
@@ -117,7 +117,7 @@ class BaseEventPlugin(BasePlugin, ABC):
         logger.info('Added handler %s for event type %s', handler, event_type)
 
     def handle_event(self, event: BaseEvent):
-        logger.info('Handle event %s', event)
+        logger.debug('Handle event %s', event)
         for handler in self.event_handlers[type(event)]:
             try:
                 handler(event)
@@ -126,3 +126,9 @@ class BaseEventPlugin(BasePlugin, ABC):
 
     def send_event(self, event: BaseEvent):
         return self.event_exchange.send_message(event)
+
+    def send_events(self, events: List[BaseEvent]):
+        result = []
+        for ev in events:
+            result.append(self.send_event(ev))
+        return result
