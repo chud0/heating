@@ -4,7 +4,6 @@ import typing
 
 from messages.events import MqttMessageSend
 
-
 logger = logging.getLogger(__name__)
 
 
