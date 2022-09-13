@@ -32,6 +32,13 @@ class EventExchange:
         # from exchange
         return self.outgoing_message_queue.get(timeout=timeout, block=False)
 
+    def __repr__(self):
+        return (
+            f'{self.__class__.__name__} '
+            f'[{self.incoming_message_queue.qsize()} / '
+            f'{self.outgoing_message_queue.qsize()}]'
+        )
+
 
 class BasePlugin(Thread):
     def __init__(self, tick_timeout=0.1, *args, **kwargs):
@@ -118,7 +125,12 @@ class BaseEventPlugin(BasePlugin, ABC):
 
     def handle_event(self, event: BaseEvent):
         logger.debug('Handle event %s', event)
-        for handler in self.event_handlers[type(event)]:
+        event_handlers = self.event_handlers[type(event)]
+        if not event_handlers:
+            logger.info('Not found handler for event %s', event)
+            return
+
+        for handler in event_handlers:
             try:
                 handler(event)
             except Exception as err:
@@ -132,3 +144,9 @@ class BaseEventPlugin(BasePlugin, ABC):
         for ev in events:
             result.append(self.send_event(ev))
         return result
+
+    def stop(self):
+        # handle messages before stop
+        self._before_tick()
+
+        super().stop()
