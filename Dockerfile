@@ -8,5 +8,6 @@ COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 
 COPY app app
+COPY settings.yaml settings.yaml
 
 CMD [ "python3", "app/main.py"]

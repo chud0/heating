@@ -30,7 +30,7 @@ class MqttPlugin(BaseEventPlugin):
         self.mqtt_client.on_connect = self.on_connect_callback
         self.mqtt_client.on_disconnect = self.on_disconnect_callback
         self.mqtt_client.on_message = self.on_message_receive
-        self.mqtt_client.connect(self.settings.mqtt_host, keepalive=10)
+        self.mqtt_client.connect(self.settings['mqtt_host'], keepalive=10)
         self.mqtt_client.loop()
 
         self._client_connected = True

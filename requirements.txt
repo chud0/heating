@@ -1,1 +1,2 @@
-paho-mqtt
+paho-mqtt <= 1.7
+pyyaml == 6.0

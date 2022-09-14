@@ -1,0 +1,35 @@
+# plugins order very important!
+plugins:
+  plugins.MqttPlugin:
+      mqtt_host: 192.168.0.14
+  plugins.UnderFloorHeatingMixerPlugin:
+      main_mixer:
+        name: mixer_pump
+        temp_topic: /devices/wb-w1/controls/28-000005fa5c4c
+        device_topics: [/devices/wb-gpio/controls/EXT1_K3/on]
+        target_temp: 25
+      slave_mixers:
+        - name: corridor_mixer
+          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
+          device_topics: [/devices/wb-gpio/controls/EXT1_K4/on]
+          target_temp: 25
+        - name: bathroom_mixer
+          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
+          device_topics: [/devices/wb-gpio/controls/EXT1_K5/on]
+          target_temp: 25
+        - name: kitchen1_mixer
+          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
+          device_topics: [/devices/wb-gpio/controls/EXT1_K6/on]
+          target_temp: 25
+        - name: kitchen2_mixer
+          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
+          device_topics: [/devices/wb-gpio/controls/EXT1_K7/on]
+          target_temp: 25
+        - name: kitchen3_mixer
+          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
+          device_topics: [/devices/wb-gpio/controls/EXT1_K8/on]
+          target_temp: 25
+      pump:
+        device_topics: [/devices/wb-mr6cu_47/controls/K2/on]
+        state_changed_timeout: 30
+        name: mixer_pump

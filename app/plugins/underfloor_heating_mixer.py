@@ -16,13 +16,12 @@ class UnderFloorHeatingMixerPlugin(BaseMqttMessagePlugin):
         super().__init__(*args, **kwargs)
 
         self._device_by_temp_topic = defaultdict(list)  # topic: List[Thermostat]
-        device_settings = self.settings.underfloor_heating_mixer
 
-        pump_settings = device_settings['pump']
+        pump_settings = self.settings['pump']
         self.pump = devices.Pump(hardware_topics=pump_settings['device_topics'])
         self.last_pump_state_changed_at, self.pump_state_changed_timeout = 0, pump_settings['state_changed_timeout']
 
-        for thermo_head_settings in device_settings['slave_mixers'] + [device_settings['main_mixer']]:
+        for thermo_head_settings in self.settings['slave_mixers'] + [self.settings['main_mixer']]:
             thermostat = devices.Thermostat(
                 hardware_topics=thermo_head_settings['device_topics'],
                 target_temperature=thermo_head_settings['target_temp'],

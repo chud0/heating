@@ -30,7 +30,7 @@ class TestPluginRunManager(unittest.TestCase):
 
         self.test_manager = PluginRunManager(
             plugins=[PluginWithReceiveMessage, PluginWithSendMessageOnStop],
-            plugins_settings={'test_handler': self.event_handler_mock},
+            plugins_settings={'.PluginWithReceiveMessage': {'test_handler': self.event_handler_mock}},
         )
 
     def test_ok(self):

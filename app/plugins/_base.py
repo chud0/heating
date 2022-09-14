@@ -106,7 +106,18 @@ class BaseEventPlugin(BasePlugin, ABC):
         self.event_exchange = event_exchange
         self.event_handlers = defaultdict(list)
 
-        self.settings = settings
+        self.settings = self._find_plugin_settings(settings)
+
+    def _find_plugin_settings(self, all_plugins_settings):
+        if not all_plugins_settings:
+            return {}
+
+        for plugin_spec in all_plugins_settings.keys():
+            _, plugin_class_name = plugin_spec.rsplit('.', 1)
+            if plugin_class_name == self.__class__.__name__:
+                return all_plugins_settings[plugin_spec]
+
+        logger.error('Not found settings for plugin %s', self)
 
     def _before_tick(self) -> None:
         while True:
