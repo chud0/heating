@@ -29,7 +29,7 @@ class TestPluginRunManager(unittest.TestCase):
         self.event_handler_mock = unittest.mock.Mock()
 
         self.test_manager = PluginRunManager(
-            plugins=[PluginWithSendMessageOnStop, PluginWithReceiveMessage],
+            plugins=[PluginWithReceiveMessage, PluginWithSendMessageOnStop],
             plugins_settings={'test_handler': self.event_handler_mock},
         )
 

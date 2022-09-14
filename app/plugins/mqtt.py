@@ -114,6 +114,12 @@ class MqttPlugin(BaseEventPlugin):
 
         self._loop_need_count += 1
 
+    def stop(self):
+        # todo: disconnect
+        super(MqttPlugin, self).stop()
+
+        self.send_messages()
+
 
 """
 from plugins.mqtt import MqttPlugin

@@ -7,6 +7,10 @@ from plugins.mqtt import BaseEventPlugin
 
 
 class PluginRunManager:
+    """
+    plugins order very important: start in forward order, stops in reverse.
+    """
+
     def __init__(self, plugins: List[Type[BaseEventPlugin]], plugins_settings):
         self._plugins = [
             p(
@@ -32,7 +36,7 @@ class PluginRunManager:
     def stop(self):
         # WARNING! very important keep this behavior!
         # first plugin mast bi start earlier and stop
-        for plugin in self._plugins:
+        for plugin in self._plugins[::-1]:
             plugin.stop()
             self.send_out_plugin_events(plugin)
 

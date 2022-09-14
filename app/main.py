@@ -5,8 +5,6 @@ from plugins import MqttPlugin, PluginRunManager, UnderFloorHeatingMixerPlugin
 plugins_for_run = [MqttPlugin, UnderFloorHeatingMixerPlugin]
 # need save order on  start but revers on stop!
 
-# fixme: send plugins on stop messages!
-
 
 # fixme: move to settings module
 class Settings:

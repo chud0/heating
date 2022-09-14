@@ -50,8 +50,10 @@ class Thermostat(BaseMqttDevice):
         return []
 
     def stop(self) -> [MqttMessageSend]:
-        self._last_state = False
-        return super(Thermostat, self).stop()
+        device_stopping_messages = super(Thermostat, self).stop()
+
+        self._last_state = False  # enabled attr required for this, and not generate stopping messages
+        return device_stopping_messages
 
     @property
     def enabled(self):
