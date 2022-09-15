@@ -20,9 +20,8 @@ class TestThermostatDevice(unittest.TestCase):
 
     def test_ok(self):
         """
-        temper  21 22 23 24 25 26 25 24 23 22 21
-        message  +  *  *  *  -  *  *  *  *  *  +
-        enabled  +  +  +  +  -  -  -  -  -  -  +
+        test: start for warming, fast up, inertial with hysteresis, stop on set target
+        # todo: split on several small
         """
         self.assertFalse(self.test_device.enabled)
 
@@ -30,34 +29,44 @@ class TestThermostatDevice(unittest.TestCase):
         self.assert_messages_for_turn_on_device(messages)
         self.assertTrue(self.test_device.enabled)
 
-        messages = self.test_device(22)
+        messages = self.test_device(21.5)
         self.assert_messages_for_do_not_change_state_device(messages)
 
+        # very fast temp up - device turn off
         messages = self.test_device(23)
-        self.assert_messages_for_do_not_change_state_device(messages)
-
-        messages = self.test_device(24)
-        self.assert_messages_for_do_not_change_state_device(messages)
-
-        messages = self.test_device(25)
         self.assert_messages_for_turn_off_device(messages)
         self.assertFalse(self.test_device.enabled)
 
-        messages = self.test_device(26)
-        self.assert_messages_for_do_not_change_state_device(messages)
-
-        messages = self.test_device(25)
-        self.assert_messages_for_do_not_change_state_device(messages)
-
         messages = self.test_device(24)
         self.assert_messages_for_do_not_change_state_device(messages)
 
-        messages = self.test_device(23)
-        self.assert_messages_for_do_not_change_state_device(messages)
-
         messages = self.test_device(22)
-        self.assert_messages_for_do_not_change_state_device(messages)
+        self.assert_messages_for_turn_on_device(messages)
+        self.assertTrue(self.test_device.enabled)
 
+        # turn off for compensation inertial
+        messages = self.test_device(22.5)
+        self.assert_messages_for_turn_off_device(messages)
+        self.assertFalse(self.test_device.enabled)
+
+        messages = self.test_device(23)
+        self.assert_messages_for_turn_on_device(messages)
+        self.assertTrue(self.test_device.enabled)
+
+        messages = self.test_device(23.5)
+        self.assert_messages_for_turn_off_device(messages)
+        self.assertFalse(self.test_device.enabled)
+
+        messages = self.test_device(23.7)
+        self.assert_messages_for_turn_on_device(messages)
+        self.assertTrue(self.test_device.enabled)
+
+        # stop up temp with hysteresis
+        messages = self.test_device(24.5)
+        self.assert_messages_for_turn_off_device(messages)
+        self.assertFalse(self.test_device.enabled)
+
+        # cycle run again
         messages = self.test_device(21)
         self.assert_messages_for_turn_on_device(messages)
         self.assertTrue(self.test_device.enabled)
