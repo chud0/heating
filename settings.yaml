@@ -1,13 +1,13 @@
 # plugins order very important!
 plugins:
   plugins.MqttPlugin:
-      mqtt_host: 192.168.0.14
+      mqtt_host: 192.168.1.200
   plugins.UnderFloorHeatingMixerPlugin:
       main_mixer:
         name: mixer_pump
         temp_topic: /devices/wb-w1/controls/28-000005fa5c4c
         device_topics: [/devices/wb-gpio/controls/EXT1_K3/on]
-        target_temp: 25
+        target_temp: 30
       slave_mixers:
         - name: corridor_mixer
           temp_topic: /devices/wb-w1/controls/28-000005fb67b8

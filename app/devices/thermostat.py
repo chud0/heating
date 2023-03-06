@@ -1,7 +1,13 @@
+import logging
+
 import helpers
 from messages.events import MqttMessageSend
+import time
 
 from ._base import BaseMqttDevice
+
+
+logger = logging.getLogger(__name__)
 
 
 class Thermostat(BaseMqttDevice):
@@ -13,38 +19,36 @@ class Thermostat(BaseMqttDevice):
 
         self._last_temperature = helpers.AlwaysReturnZeroOnSubtraction()
         self._last_state = False  # ON or OFF device
+        self._last_temp_time = time.time()
 
         self._enabled = True
 
     def __call__(self, current_temperature: float) -> [MqttMessageSend]:
         last_temperature, self._last_temperature = self._last_temperature, current_temperature
+        current_temp_time = time.time()
+        last_temp_time, self._last_temp_time = self._last_temp_time, current_temp_time
+        is_temp_rises = (last_temperature - current_temperature) < 0
+        target_temperature = self.target_temperature
+
         result = []
         if not self._enabled:
             return result
 
-        if current_temperature - last_temperature > self.hysteresis / 2:
-            # very quick up
+        # very quick temp get up
+        if is_temp_rises and (current_temperature - last_temperature) >= (0.5 * self.hysteresis / (current_temp_time - last_temp_time)):
+            logger.warning('Very quick temp get up')
             result.extend(self.turn_off())
             return result
 
-        target_temperature = self.target_temperature
-        if self._last_state:
-            # on getting hot now
-            target_temperature -= self.hysteresis
-
-            if target_temperature >= current_temperature:
-                # nothing to do, hardware enabled now
-                return result
-
+        # in hysteresis zone
+        if target_temperature <= current_temperature <= target_temperature + self.hysteresis:
+            if is_temp_rises:
+                result.extend(self.turn_off())
+            else:
+                result.extend(self.turn_on())
+        elif current_temperature > target_temperature + self.hysteresis:
             result.extend(self.turn_off())
-
-        else:
-            target_temperature += self.hysteresis
-
-            if target_temperature <= current_temperature:
-                # nothing to do, hardware disabled now
-                return result
-
+        elif current_temperature < target_temperature:
             result.extend(self.turn_on())
 
         return result

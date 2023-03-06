@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class UnderFloorHeatingMixerPlugin(BaseMqttMessagePlugin):
+    # todo: remove salve\main mixer, add required device:
+    #   - main mixer add to required all flor mixers
+    #   - pump add to required main mixer
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
