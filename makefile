@@ -1,42 +1,58 @@
+ifeq ($(OS),Windows_NT)
+    detected_OS := Windows
+    PYTHON_BIN = python.exe
+    PIP_BIN = pip.exe
+    ACTIVATE_CMD = activate.bat
+    BIN_DIR_NAME = Scripts
+else
+    detected_OS := $(shell sh -c 'uname 2>/dev/null || echo Unknown')
+    PYTHON_BIN = python3
+    PIP_BIN = pip
+    ACTIVATE_CMD = activate
+    BIN_DIR_NAME = bin
+endif
+
 VENV = venv
-PYTHON = $(VENV)/bin/python3
-PIP = $(VENV)/bin/pip
+PYTHON_BINS = $(VENV)/$(BIN_DIR_NAME)
+PYTHON = $(PYTHON_BINS)/$(PYTHON_BIN)
+PIP = $(PYTHON_BINS)/$(PIP_BIN)
+ACTIVATE = $(PYTHON_BINS)/$(ACTIVATE_CMD)
 
 export PYTHONPATH := $(CURDIR)/app
 
-run: $(VENV)/bin/activate
+run: $(ACTIVATE)
 	$(PYTHON) app/main.py
 
 run-bin: dist/main
 	./dist/main
 
-format: $(VENV)/bin/activate
+format: $(ACTIVATE)
 	$(PYTHON) -m isort .
 	$(PYTHON) -m black --target-version py310 --skip-string-normalization --line-length 120 app
 
-format_check: $(VENV)/bin/activate
+format_check: $(ACTIVATE)
 	@echo "##### Check imports format #####"
 	$(PYTHON) -m isort -c .
 
 	@echo "##### Check code format #####"
 	$(PYTHON) -m black --target-version py310 --skip-string-normalization --line-length 120 --check app
 
-test_code: $(VENV)/bin/activate
+test_code: $(ACTIVATE)
 	@echo "##### Check code tests #####"
 	$(PYTHON) -m unittest discover
 
 test: format_check test_code
 
-coverage: $(VENV)/bin/activate
+coverage: $(ACTIVATE)
 	$(PYTHON) -m coverage run -m unittest discover
 	$(PYTHON) -m coverage report -m
 	$(PYTHON) -m coverage html
 	xdg-open htmlcov/index.html
 
-$(VENV)/bin/activate: requirements.txt dev_requirements.txt
+$(ACTIVATE): requirements.txt dev_requirements.txt
 	@echo "##### Create virtual env #####"
 	pip3 install virtualenv
-	python3 -m venv $(VENV)
+	python -m venv $(VENV) --clear
 	@echo "##### Install requirements #####"
 	$(PIP) install -r requirements.txt
 	$(PIP) install -r dev_requirements.txt
