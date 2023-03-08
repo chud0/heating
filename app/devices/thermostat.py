@@ -1,11 +1,10 @@
 import logging
+import time
 
 import helpers
 from messages.events import MqttMessageSend
-import time
 
 from ._base import BaseMqttDevice
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,10 @@ class Thermostat(BaseMqttDevice):
             return result
 
         # very quick temp get up
-        if is_temp_rises and (current_temperature - last_temperature) >= (0.5 * self.hysteresis / (current_temp_time - last_temp_time)):
+        if (
+            is_temp_rises
+            and (current_temperature - last_temperature) / (current_temp_time - last_temp_time) >= 0.5 * self.hysteresis
+        ):
             logger.warning('Very quick temp get up')
             result.extend(self.turn_off())
             return result
