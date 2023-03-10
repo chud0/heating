@@ -3,6 +3,7 @@ import time
 from collections import defaultdict
 from functools import partial
 
+import common
 import devices
 import messages
 
@@ -18,50 +19,36 @@ class UnderFloorHeatingMixerPlugin(BaseMqttMessagePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._device_by_temp_topic = defaultdict(list)  # topic: List[Thermostat]
+        self._plugin_devices = []
 
-        pump_settings = self.settings['pump']
-        self.pump = devices.Pump(hardware_topics=pump_settings['device_topics'])
-        self.last_pump_state_changed_at, self.pump_state_changed_timeout = 0, pump_settings['state_changed_timeout']
+        self.load_devices()
 
-        for thermo_head_settings in self.settings['slave_mixers'] + [self.settings['main_mixer']]:
-            thermostat = devices.Thermostat(
-                hardware_topics=thermo_head_settings['device_topics'],
-                target_temperature=thermo_head_settings['target_temp'],
-                name=thermo_head_settings['name'],
-            )
-            self._device_by_temp_topic[thermo_head_settings['temp_topic']].append(thermostat)
-            self.subscribe_to_topic(
-                thermo_head_settings['temp_topic'],
-                partial(self.mixer_temp_sensor_handler, thermostat=thermostat),
-            )
+    def load_devices(self):
+        if self._plugin_devices:
+            raise ValueError('Plugin devices loaded!')
 
-    @property
-    def all_thermo_heads(self):
-        return [th for th_list in self._device_by_temp_topic.values() for th in th_list]
+        devices_settings = self.settings['devices']
+        for device_spec, device_params in devices_settings.items:
+            device_temp_topic = device_params.pop('temp_topic', None)
+            device_class = common.load_module(device_spec)
+            device = device_class(**device_params)
 
-    def mixer_temp_sensor_handler(self, event: messages.events.MqttMessageReceived, thermostat: devices.Thermostat):
-        current_temp = float(event.payload)
-        logger.info('%s handle temp %s', thermostat, current_temp)
-        events_to_send = thermostat(current_temp)
+            self._plugin_devices.append(device)
+            if device_temp_topic is not None:
+                self.subscribe_to_topic(
+                    device_temp_topic,
+                    partial(self._handle_receive_temperature, device=device),
+                )
+
+    def _handle_sensor_data_event(self, event: messages.events.MqttMessageReceived, device: devices.Thermostat):
         self.send_events(events_to_send)
 
     def tick(self) -> None:
-        if time.time() - self.last_pump_state_changed_at < self.pump_state_changed_timeout:
-            return
-
-        pump_need_working = any(map(lambda t: t.enabled, self.all_thermo_heads))
-        if pump_need_working:
-            events_to_send = self.pump.start()
-        else:
-            events_to_send = self.pump.stop()
-
-        self.send_events(events_to_send)
-        self.last_pump_state_changed_at = time.time()
+        # todo check all devices and send messages
+        pass
 
     def stop(self):
-        self.send_events(self.pump.stop())
-        for th in self.all_thermo_heads:
-            self.send_events(th.stop())
+        for dv in self._plugin_devices:
+            self.send_events(dv.stop())
 
         super(UnderFloorHeatingMixerPlugin, self).stop()
