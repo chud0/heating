@@ -3,33 +3,45 @@ plugins:
   plugins.MqttPlugin:
       mqtt_host: 192.168.1.200
   plugins.UnderFloorHeatingMixerPlugin:
-      main_mixer:
-        name: mixer_pump
-        temp_topic: /devices/wb-w1/controls/28-000005fa5c4c
-        device_topics: [/devices/wb-gpio/controls/EXT1_K3/on]
-        target_temp: 30
-      slave_mixers:
+    devices:
+      devices.thermostat.Thermostat:
+        - name: mixer_pump
+          sensor_topic: /devices/wb-w1/controls/28-000005fa5c4c
+          hardware_topic: /devices/wb-gpio/controls/EXT1_K3/on
+          target_temperature: 30
+          dependencies:
+            - corridor_mixer
+            - bathroom_mixer
+            - kitchen1_mixer
+            - kitchen2_mixer
+            - kitchen3_mixer
         - name: corridor_mixer
-          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
-          device_topics: [/devices/wb-gpio/controls/EXT1_K4/on]
-          target_temp: 25
+          sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
+          hardware_topic: /devices/wb-gpio/controls/EXT1_K4/on
+          target_temperature: 25
         - name: bathroom_mixer
-          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
-          device_topics: [/devices/wb-gpio/controls/EXT1_K5/on]
-          target_temp: 25
+          sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
+          hardware_topic: /devices/wb-gpio/controls/EXT1_K5/on
+          target_temperature: 25
         - name: kitchen1_mixer
-          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
-          device_topics: [/devices/wb-gpio/controls/EXT1_K6/on]
-          target_temp: 25
+          sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
+          hardware_topic: /devices/wb-gpio/controls/EXT1_K6/on
+          target_temperature: 25
         - name: kitchen2_mixer
-          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
-          device_topics: [/devices/wb-gpio/controls/EXT1_K7/on]
-          target_temp: 25
+          sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
+          hardware_topic: /devices/wb-gpio/controls/EXT1_K7/on
+          target_temperature: 25
         - name: kitchen3_mixer
-          temp_topic: /devices/wb-w1/controls/28-000005fb67b8
-          device_topics: [/devices/wb-gpio/controls/EXT1_K8/on]
-          target_temp: 25
-      pump:
-        device_topics: [/devices/wb-mr6cu_47/controls/K2/on]
-        state_changed_timeout: 30
-        name: mixer_pump
+          sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
+          hardware_topic: /devices/wb-gpio/controls/EXT1_K8/on
+          target_temperature: 25
+      devices.pump.Pump:
+        - hardware_topic: /devices/wb-mr6cu_47/controls/K2/on
+#          state_changed_timeout: 30
+          name: mixer_pump
+          dependencies:
+            - corridor_mixer
+            - bathroom_mixer
+            - kitchen1_mixer
+            - kitchen2_mixer
+            - kitchen3_mixer

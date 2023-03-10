@@ -11,7 +11,7 @@ if __name__ == '__main__':
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 
-    app_settings = load_settings(pathlib.Path('../settings.yaml'))
+    app_settings = load_settings(pathlib.Path('settings.yaml'))
 
     program_manager = PluginRunManager(
         plugins=app_settings['plugins_for_run'],

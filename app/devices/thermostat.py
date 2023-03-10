@@ -2,7 +2,7 @@ import logging
 import time
 
 import helpers
-from messages.events import MqttMessageSend
+from messages.events import MqttMessageReceived, MqttMessageSend
 
 from ._base import BaseMqttDevice
 
@@ -84,3 +84,8 @@ class Thermostat(BaseMqttDevice):
             return []
         self._last_state = False
         return self._build_messages_turn_off()
+
+    def on_sensor_data_receive(self, event: MqttMessageReceived) -> [MqttMessageSend]:
+        current_temp = float(event.payload)
+        logger.info('%s handle temp %s', self, current_temp)
+        return self.__call__(current_temp)
