@@ -33,12 +33,15 @@ class BaseMqttDevice(BaseDevice):
     _cmd_turn_on = '1'
     _cmd_turn_off = '0'
 
-    def __init__(self, hardware_topic: str, sensor_topic: str = None, name: str = None):
+    def __init__(
+        self, name: str, hardware_topic: str, sensor_topic: str = None, dependencies: ['BaseMqttDevice'] = None
+    ):
         self._hardware_topic = hardware_topic
         self._sensor_topic = sensor_topic
+        self._dependencies = dependencies
 
         self._enabled = False
-        self._name = name or 'unnamed'
+        self.name = name
 
     def _build_messages_for_mqtt_send(self, payload: str) -> typing.List[MqttMessageSend]:
         return [MqttMessageSend(topic=self._hardware_topic, payload=payload)]
@@ -72,13 +75,17 @@ class BaseMqttDevice(BaseDevice):
     def enabled(self):
         return self._enabled
 
+    @property
+    def dependencies_enabled(self):
+        return any((d.enabled for d in self._dependencies))
+
     def get_topics_subscriptions(self):
         if not self._sensor_topic:
             return []
         return [(self._sensor_topic, self.on_sensor_data_receive)]
 
     def __str__(self):
-        return f'{self.__class__.__name__}[{self._name}]'
+        return f'{self.__class__.__name__}[{self.name}]'
 
-    def on_sensor_data_receive(self, event: MqttMessageReceived):
+    def on_sensor_data_receive(self, event: MqttMessageReceived) -> [MqttMessageSend]:
         logger.warning('Receive event %s on default, callback. Register a handler to process the message')

@@ -35,7 +35,7 @@ class TestThermostatDevice(unittest.TestCase):
         self.time_patch = unittest.mock.patch('devices.thermostat.time', new_callable=TimeModulePatcher)
 
     def setUp(self):
-        self.test_device = thermostat.Thermostat(hardware_topic='test', target_temperature=23, hysteresis=1)
+        self.test_device = thermostat.Thermostat(name='a', hardware_topic='test', target_temperature=23, hysteresis=1)
 
         self.time_mock: TimeModulePatcher = self.time_patch.start()
 
