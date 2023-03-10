@@ -16,7 +16,7 @@ class DeviceLoader:
         }
         self._devices_by_name = dict()
 
-    def load_devices(self):
+    def load_devices(self) -> [BaseMqttDevice]:
         return [self._load_device(*params) for params in self._devices_params_by_device_name.values()]
 
     def _load_device(self, device_spec, device_params):

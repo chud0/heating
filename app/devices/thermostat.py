@@ -85,7 +85,7 @@ class Thermostat(BaseMqttDevice):
         self._last_state = False
         return self._build_messages_turn_off()
 
-    def on_sensor_data_receive(self, event: MqttMessageReceived):
+    def on_sensor_data_receive(self, event: MqttMessageReceived) -> [MqttMessageSend]:
         current_temp = float(event.payload)
         logger.info('%s handle temp %s', self, current_temp)
         return self.__call__(current_temp)
