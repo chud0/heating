@@ -19,10 +19,15 @@ class UnderFloorHeatingMixerPlugin(BaseMqttMessagePlugin):
 
         # subscribe devices to sensors
         self._topics_to_handler_map = defaultdict(list)
+        topic_subscribed = set()  # dont duplicate device subscribe
+
         for device in self._plugin_devices:
             for topic, cb in device.get_topics_subscriptions():
                 self._topics_to_handler_map[topic].append(cb)
-                self.subscribe_to_topic(topic, self.device_message_handler)
+
+                if topic not in topic_subscribed:
+                    self.subscribe_to_topic(topic, self.device_message_handler)
+                    topic_subscribed.add(topic)
 
     def device_message_handler(self, event: messages.events.MqttMessageReceived):
         for cb in self._topics_to_handler_map[event.topic]:

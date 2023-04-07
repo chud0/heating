@@ -1,6 +1,6 @@
 # plugins order very important!
 plugins:
-  plugins.MqttPlugin:
+  plugins.MqttPlugin:  # need be first
       mqtt_host: 192.168.1.200
   plugins.UnderFloorHeatingMixerPlugin:
     devices:
@@ -18,27 +18,27 @@ plugins:
         - name: corridor_mixer
           sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
           hardware_topic: /devices/wb-gpio/controls/EXT1_K4/on
-          target_temperature: 25
+          target_temperature: 24
         - name: bathroom_mixer
           sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
           hardware_topic: /devices/wb-gpio/controls/EXT1_K5/on
-          target_temperature: 25
+          target_temperature: 22
         - name: kitchen1_mixer
           sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
           hardware_topic: /devices/wb-gpio/controls/EXT1_K6/on
-          target_temperature: 25
+          target_temperature: 22
         - name: kitchen2_mixer
           sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
           hardware_topic: /devices/wb-gpio/controls/EXT1_K7/on
-          target_temperature: 25
+          target_temperature: 22
         - name: kitchen3_mixer
           sensor_topic: /devices/wb-w1/controls/28-000005fb67b8
           hardware_topic: /devices/wb-gpio/controls/EXT1_K8/on
-          target_temperature: 25
+          target_temperature: 22
       devices.pump.Pump:
         - hardware_topic: /devices/wb-mr6cu_47/controls/K2/on
 #          state_changed_timeout: 30
-          name: mixer_pump
+          name: pump
           dependencies:
             - corridor_mixer
             - bathroom_mixer
