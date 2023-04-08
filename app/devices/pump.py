@@ -1,5 +1,5 @@
-from ._base import BaseMqttDevice
+from ._base import BaseDevice
 
 
-class Pump(BaseMqttDevice):
+class Pump(BaseDevice):
     pass

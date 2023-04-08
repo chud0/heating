@@ -2,7 +2,7 @@ import logging
 
 import common
 
-from ._base import BaseMqttDevice
+from ._base import BaseDevice
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class DeviceLoader:
         }
         self._devices_by_name = dict()
 
-    def load_devices(self) -> [BaseMqttDevice]:
+    def load_devices(self) -> [BaseDevice]:
         return [self._load_device(*params) for params in self._devices_params_by_device_name.values()]
 
     def _load_device(self, device_spec, device_params):
@@ -27,7 +27,7 @@ class DeviceLoader:
         device_dependency = [self._resolve_dependency(name) for name in device_params.get('dependencies', [])]
         device_params['dependencies'] = device_dependency
         device_class = common.load_module(device_spec)
-        device: BaseMqttDevice = device_class(**device_params)
+        device: BaseDevice = device_class(**device_params)
 
         self._devices_by_name[device.name] = device
         logger.info('Device %s loaded', device)

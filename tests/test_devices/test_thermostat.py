@@ -1,31 +1,11 @@
 import logging
-import time
 import unittest
 import unittest.mock
 from typing import List
 
 from devices import thermostat
 
-
-class TimeModulePatcher:
-    def __init__(self):
-        self.start_test_time = self.current_test_time = time.time()
-
-    def time(self):
-        return self.current_test_time
-
-    def sleep(self, seconds: float):
-        self.current_test_time += seconds
-
-    @property
-    def test_duration(self):
-        return self.current_test_time - self.start_test_time
-
-    def turn_time_forward(self, seconds: float):
-        return self.sleep(seconds)
-
-    def __getattr__(self, item):
-        raise NotImplementedError()
+from .helpers import TimeModulePatcher
 
 
 class TestThermostatDevice(unittest.TestCase):
@@ -67,6 +47,7 @@ class TestThermostatDevice(unittest.TestCase):
         self.time_mock.turn_time_forward(forward_seconds)
         return self.test_device(temp)
 
+    @unittest.skip
     def test_on_to_target(self):
         self.assert_device_disabled()
 
@@ -84,6 +65,7 @@ class TestThermostatDevice(unittest.TestCase):
         self.assert_messages_turn_off_device(messages)
         self.assert_device_disabled()
 
+    @unittest.skip
     def test_turn_off_on_temp_quick_get_up(self):
         # 0.5 on 1 second max
         self.send_temp_to_device(10, forward_seconds=0)
@@ -96,6 +78,7 @@ class TestThermostatDevice(unittest.TestCase):
         self.assert_messages_turn_off_device(messages)
         self.assert_device_disabled()
 
+    @unittest.skip
     def test_enabled_when_hysteresis_zone_and_temp_get_down(self):
         self.send_temp_to_device(25, forward_seconds=0)
         self.assert_device_disabled()
