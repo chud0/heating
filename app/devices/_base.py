@@ -1,5 +1,6 @@
 import abc
 import logging
+import time
 import typing
 
 from messages.events import MqttMessageReceived, MqttMessageSend
@@ -7,7 +8,7 @@ from messages.events import MqttMessageReceived, MqttMessageSend
 logger = logging.getLogger(__name__)
 
 
-class BaseDevice(abc.ABC):
+class AbstractDevice(abc.ABC):
     @abc.abstractmethod
     def start(self) -> typing.List[typing.Any]:
         ...
@@ -26,19 +27,16 @@ class BaseDevice(abc.ABC):
         ...
 
 
-class BaseMqttDevice(BaseDevice):
+class BaseMqttDevice(AbstractDevice):
     # hardware_topic и sensor_topic can have one value, if you need to change it -
     #     make the type of device/sensor: topic value
 
     _cmd_turn_on = '1'
     _cmd_turn_off = '0'
 
-    def __init__(
-        self, name: str, hardware_topic: str, sensor_topic: str = None, dependencies: ['BaseMqttDevice'] = None
-    ):
+    def __init__(self, name: str, hardware_topic: str, sensor_topic: str = None):
         self._hardware_topic = hardware_topic
         self._sensor_topic = sensor_topic
-        self._dependencies = dependencies
 
         self._enabled = False
         self.name = name
@@ -75,10 +73,6 @@ class BaseMqttDevice(BaseDevice):
     def enabled(self):
         return self._enabled
 
-    @property
-    def dependencies_enabled(self):
-        return any((d.enabled for d in self._dependencies))
-
     def get_topics_subscriptions(self):
         if not self._sensor_topic:
             return []
@@ -89,3 +83,20 @@ class BaseMqttDevice(BaseDevice):
 
     def on_sensor_data_receive(self, event: MqttMessageReceived) -> [MqttMessageSend]:
         logger.warning('Receive event %s on default, callback. Register a handler to process the message')
+
+
+class BaseDevice(BaseMqttDevice):
+    def __init__(self, dependencies: ['BaseDevice'] = None, state_changed_timeout=0, *args, **kwargs):
+        super(BaseDevice, self).__init__(*args, **kwargs)
+
+        self._dependencies = dependencies
+        self.state_changed_timeout = state_changed_timeout
+        self._last_sensor_time = time.time()
+
+    @property
+    def dependencies_enabled(self):
+        return any((d.enabled for d in self._dependencies))
+
+    def on_sensor_data_receive(self, event: MqttMessageReceived) -> [MqttMessageSend]:
+        self._last_sensor_time = time.time()
+        return []
