@@ -1,6 +1,7 @@
 import logging
 import time
 
+import errors
 import helpers
 from messages.events import MqttMessageReceived, MqttMessageSend
 
@@ -12,6 +13,9 @@ logger = logging.getLogger(__name__)
 class Thermostat(BaseDevice):
     def __init__(self, target_temperature: float, hysteresis: float = 1, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if self._sensor_topic is None:
+            raise errors.DeviceError('Sensor topic is required for thermostat')
 
         self.hysteresis = hysteresis
         self.target_temperature = target_temperature
@@ -35,19 +39,19 @@ class Thermostat(BaseDevice):
             and (current_temperature - last_temperature) / (current_temp_time - last_temp_time) >= 0.5 * self.hysteresis
         ):
             logger.warning('Very quick temp get up')
-            result.extend(self.start())
+            result.extend(self.turn_off())
             return result
 
         # in hysteresis zone
         if target_temperature <= current_temperature <= target_temperature + self.hysteresis:
             if is_temp_rises:
-                result.extend(self.stop())
+                result.extend(self.turn_off())
             else:
-                result.extend(self.start())
+                result.extend(self.turn_on())
         elif current_temperature > target_temperature + self.hysteresis:
-            result.extend(self.stop())
+            result.extend(self.turn_off())
         elif current_temperature < target_temperature:
-            result.extend(self.start())
+            result.extend(self.turn_on())
 
         return result
 
@@ -56,5 +60,10 @@ class Thermostat(BaseDevice):
 
         current_temp = float(event.payload)
         logger.info('%s handle temp %s', self, current_temp)
+
+        if not self.is_need_work:
+            logger.debug('Not need work')
+            return inner_messages
+
         messages = self.handle_temperature_sensor_val(current_temp)
         return inner_messages + messages

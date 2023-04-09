@@ -21,6 +21,9 @@ class MqttMessageReceived(MqttEvents):
         self.topic = topic
         self.payload = payload
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.topic}, {self.payload})'
+
 
 class MqttMessageSend(MqttEvents):
     def __init__(self, topic, payload, *args, **kwargs):
