@@ -3,7 +3,7 @@ import unittest.mock
 import errors
 from devices import BaseDevice
 
-from tests.helpers import TestDeviceMixin, TimeMockTestMixin
+from tests.common import TestDeviceMixin, TimeMockTestMixin
 
 
 class TestBaseDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase):

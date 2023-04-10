@@ -1,28 +1,8 @@
-import time
 import unittest.mock
 
-# from messages.events import MqttMessageSend
+from messages.events import MqttMessageSend
 
-
-class TimeModulePatcher:
-    def __init__(self):
-        self.start_test_time = self.current_test_time = time.time()
-
-    def time(self):
-        return self.current_test_time
-
-    def sleep(self, seconds: float):
-        self.current_test_time += seconds
-
-    @property
-    def test_duration(self):
-        return self.current_test_time - self.start_test_time
-
-    def turn_time_forward(self, seconds: float):
-        return self.sleep(seconds)
-
-    def __getattr__(self, item):
-        raise NotImplementedError(f'Not implemented method {item}')
+from .mocks import TimeModulePatcher
 
 
 class TimeMockTestMixin(unittest.TestCase):
@@ -78,7 +58,7 @@ class TestDeviceMixin(unittest.TestCase):
         device = device or self.test_device
         self.assertFalse(device.is_need_work, msg=msg)
 
-    def assert_messages_turn_on_device(self, messages, topic, msg=None):
+    def assert_messages_turn_on_device(self, messages, topic=None, msg=None):
         self.assertEqual(1, len(messages), msg=msg)
 
         turn_on_message = messages[0]

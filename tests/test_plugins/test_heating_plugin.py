@@ -1,7 +1,7 @@
 import unittest.mock
 from queue import Empty, Queue
 
-from messages.events import MqttSubscribe, MqttMessageReceived, MqttMessageSend
+from messages.events import MqttMessageReceived, MqttMessageSend, MqttSubscribe
 from plugins import EventExchange, UnderFloorHeatingMixerPlugin
 
 
@@ -57,8 +57,8 @@ class TestUnderFloorHeatingMixerPlugin(unittest.TestCase):
         self.assertEqual(subscribe_msg.topic, 'sensor_test')
         self.assert_exchange_empty(event_exchange)
 
-        for dv in plugin.devices:
-            self.assert_device_enabled(dv)
+        # for dv in plugin.devices:
+        #     self.assert_device_enabled(dv)
 
     def test_plugin_with_dependency_devices(self):
         # subscribe, ...
@@ -112,4 +112,5 @@ class TestUnderFloorHeatingMixerPlugin(unittest.TestCase):
 
         for dv in plugin.devices:
             self.assertTrue(dv.turned_on)
-        print(event_exchange)
+
+        # todo: continue

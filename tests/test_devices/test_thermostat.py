@@ -5,7 +5,7 @@ from typing import List
 from devices import thermostat
 from messages.events import MqttMessageReceived
 
-from tests.helpers import TestDeviceMixin, TimeMockTestMixin
+from tests.common import TestDeviceMixin, TimeMockTestMixin
 
 
 class TestThermostatDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase):
