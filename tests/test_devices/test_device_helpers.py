@@ -24,7 +24,7 @@ class TestDeviceLoader(unittest.TestCase):
         devices = loader.load_devices()
 
         self.assertEqual(2, len(devices))
-        for d, name in zip(devices, ['a', 'b']):
+        for d, name in zip(devices, ['b', 'a']):  # order is important! dependency first
             self.assertEqual(d.name, name)
 
     def test_missing_ref(self):

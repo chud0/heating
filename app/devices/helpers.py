@@ -1,5 +1,6 @@
 import logging
-
+from typing import List
+import graphlib
 import common
 
 from ._base import BaseDevice
@@ -8,15 +9,22 @@ logger = logging.getLogger(__name__)
 
 
 class DeviceLoader:
+    """
+    Load devices from params
+    Device sort by dependencies, without dependencies first
+    """
     def __init__(self, devices_params: dict):
-        self._devices_params_by_device_name = {
+        unsorted_params = {
             device_params['name']: (device_spec, device_params)
             for device_spec, devices_list_param in devices_params.items()
             for device_params in devices_list_param
         }
+        sorter = graphlib.TopologicalSorter({n: p[1].get('dependencies', []) for n, p in unsorted_params.items()})
+
+        self._devices_params_by_device_name = {n: unsorted_params[n] for n in sorter.static_order()}
         self._devices_by_name = dict()
 
-    def load_devices(self) -> [BaseDevice]:
+    def load_devices(self) -> List[BaseDevice]:
         return [self._load_device(*params) for params in self._devices_params_by_device_name.values()]
 
     def _load_device(self, device_spec, device_params):
