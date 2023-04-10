@@ -1,6 +1,7 @@
+import graphlib
 import logging
 from typing import List
-import graphlib
+
 import common
 
 from ._base import BaseDevice
@@ -13,6 +14,7 @@ class DeviceLoader:
     Load devices from params
     Device sort by dependencies, without dependencies first
     """
+
     def __init__(self, devices_params: dict):
         unsorted_params = {
             device_params['name']: (device_spec, device_params)
@@ -21,7 +23,10 @@ class DeviceLoader:
         }
         sorter = graphlib.TopologicalSorter({n: p[1].get('dependencies', []) for n, p in unsorted_params.items()})
 
-        self._devices_params_by_device_name = {n: unsorted_params[n] for n in sorter.static_order()}
+        try:
+            self._devices_params_by_device_name = {n: unsorted_params[n] for n in sorter.static_order()}
+        except KeyError as ex:
+            raise ValueError(f'Not found device name "{ex.args[0]}" in devices, for load as dependency') from None
         self._devices_by_name = dict()
 
     def load_devices(self) -> List[BaseDevice]:
