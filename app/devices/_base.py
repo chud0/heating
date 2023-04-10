@@ -163,5 +163,5 @@ class BaseDevice(BaseAbstractMqttDevice):
             self._last_dependencies_turned_on_time = time.time()
         return is_dependencies_turned_on
 
-    def __str__(self):
-        return f'{self.__class__.__name__}[{self.name}]'
+    def __repr__(self):
+        return f'{self.__class__.__name__}[{self.name}] {"+" if self.enabled else "-"}/{"+" if self.turned_on else "-"}'
