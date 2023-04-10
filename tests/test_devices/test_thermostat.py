@@ -1,12 +1,11 @@
 import logging
-import unittest
 import unittest.mock
 from typing import List
 
 from devices import thermostat
 from messages.events import MqttMessageReceived
 
-from .helpers import TestDeviceMixin, TimeMockTestMixin
+from tests.helpers import TestDeviceMixin, TimeMockTestMixin
 
 
 class TestThermostatDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase):

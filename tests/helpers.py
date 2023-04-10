@@ -1,6 +1,8 @@
 import time
 import unittest.mock
 
+# from messages.events import MqttMessageSend
+
 
 class TimeModulePatcher:
     def __init__(self):
@@ -76,10 +78,22 @@ class TestDeviceMixin(unittest.TestCase):
         device = device or self.test_device
         self.assertFalse(device.is_need_work, msg=msg)
 
-    def assert_messages_turn_on_device(self, messages, msg=None):
+    def assert_messages_turn_on_device(self, messages, topic, msg=None):
         self.assertEqual(1, len(messages), msg=msg)
-        self.assertEqual('1', messages[0].payload, msg=msg)
 
-    def assert_messages_turn_off_device(self, messages, msg=None):
+        turn_on_message = messages[0]
+        self.assertIsInstance(turn_on_message, MqttMessageSend, msg=msg)
+        self.assertEqual('1', turn_on_message.payload, msg=msg)
+
+        if topic:
+            self.assertEqual(topic, turn_on_message.topic, msg=msg)
+
+    def assert_messages_turn_off_device(self, messages, topic=None, msg=None):
         self.assertEqual(1, len(messages), msg=msg)
-        self.assertEqual('0', messages[0].payload, msg=msg)
+
+        turn_off_message = messages[0]
+        self.assertIsInstance(turn_off_message, MqttMessageSend, msg=msg)
+        self.assertEqual('0', turn_off_message.payload, msg=msg)
+
+        if topic:
+            self.assertEqual(topic, turn_off_message.topic, msg=msg)
