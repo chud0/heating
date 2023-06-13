@@ -63,7 +63,7 @@ class Thermostat(BaseDevice):
 
         if not self.is_need_work:
             logger.debug('Not need work')
-            return inner_messages
+            return inner_messages + self.turn_off()
 
         messages = self.handle_temperature_sensor_val(current_temp)
         return inner_messages + messages

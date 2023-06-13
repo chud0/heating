@@ -4,12 +4,20 @@ from queue import Empty, Queue
 from messages.events import MqttMessageReceived, MqttMessageSend, MqttSubscribe
 from plugins import EventExchange, UnderFloorHeatingMixerPlugin
 
+from tests.common import TimeMockTestMixin
 
-class TestUnderFloorHeatingMixerPlugin(unittest.TestCase):
+
+class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
     module_reference = 'devices.thermostat.time'
+
     def assert_turn_on_device_message(self, message, topic):
         self.assertTrue(isinstance(message, MqttMessageSend))
         self.assertEqual('1', message.payload)
+        self.assertEqual(topic, message.topic)
+
+    def assert_turn_off_device_message(self, message, topic):
+        self.assertTrue(isinstance(message, MqttMessageSend))
+        self.assertEqual('0', message.payload)
         self.assertEqual(topic, message.topic)
 
     def assert_exchange_empty(self, exchange):
@@ -57,9 +65,6 @@ class TestUnderFloorHeatingMixerPlugin(unittest.TestCase):
         self.assertEqual(subscribe_msg.topic, 'sensor_test')
         self.assert_exchange_empty(event_exchange)
 
-        # for dv in plugin.devices:
-        #     self.assert_device_enabled(dv)
-
     def test_plugin_with_dependency_devices(self):
         # subscribe, ...
         devices = {
@@ -67,14 +72,14 @@ class TestUnderFloorHeatingMixerPlugin(unittest.TestCase):
                 [
                     {
                         'name': 'with_dependecy',
-                        'sensor_topic': 'sensor_test',
+                        'sensor_topic': 'wd_sensor',
                         'hardware_topic': 'wd_hardware_test',
                         'target_temperature': 25,
                         'dependencies': ['without_dependecy'],
                     },
                     {
                         'name': 'without_dependecy',
-                        'sensor_topic': 'sensor_test',
+                        'sensor_topic': 'whd_sensor',
                         'hardware_topic': 'whd_hardware_test',
                         'target_temperature': 25,
                     },
@@ -91,26 +96,44 @@ class TestUnderFloorHeatingMixerPlugin(unittest.TestCase):
 
         plugin, event_exchange = self.build_plugin_with_devices(devices=devices)
 
-        # skip subscribe message
+        # subscribe to sensor and dependencies sensors
+        event_exchange.get()
+        event_exchange.get()
         event_exchange.get()
         event_exchange.get()
 
-        event_exchange.put(MqttMessageReceived(topic='sensor_test', payload='25'))
+        event_exchange.put(MqttMessageReceived(topic='whd_sensor', payload='25'))
+        event_exchange.put(MqttMessageReceived(topic='wd_sensor', payload='25'))
         plugin._before_tick()
 
         without_dependencies_device_msg = event_exchange.get()
         self.assert_turn_on_device_message(without_dependencies_device_msg, 'whd_hardware_test')
         with_dependencies_device_msg = event_exchange.get()
         self.assert_turn_on_device_message(with_dependencies_device_msg, 'wd_hardware_test')
-        self.assert_exchange_empty(event_exchange)
-
-        plugin.tick()  # pump turn on
-
-        with_dependencies_device_msg = event_exchange.get()
-        self.assert_turn_on_device_message(with_dependencies_device_msg, 'pmp_hardware_test')
+        pump_device_msg = event_exchange.get()
+        self.assert_turn_on_device_message(pump_device_msg, 'pmp_hardware_test')
         self.assert_exchange_empty(event_exchange)
 
         for dv in plugin.devices:
             self.assertTrue(dv.turned_on)
 
-        # todo: continue
+        plugin.tick()
+
+        self.time_mock.turn_time_forward(5)
+        event_exchange.put(MqttMessageReceived(topic='whd_sensor', payload='26'))
+
+        plugin._before_tick()
+
+        without_dependencies_device_msg = event_exchange.get()
+        self.assert_turn_off_device_message(without_dependencies_device_msg, 'whd_hardware_test')
+        with_dependencies_device_msg = event_exchange.get()
+        self.assert_turn_off_device_message(with_dependencies_device_msg, 'wd_hardware_test')
+        self.assert_exchange_empty(event_exchange)
+
+        plugin.tick()  # pump turn oFF
+
+        # pump_device_msg = event_exchange.get()
+        # self.assert_turn_off_device_message(pump_device_msg, 'pmp_hardware_test')
+        # self.assert_exchange_empty(event_exchange)
+        #
+        # # todo: continue

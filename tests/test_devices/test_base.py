@@ -100,5 +100,6 @@ class TestBaseDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase):
         self.time_mock.sleep(10)
         self.assertEqual(self.time_mock.time() - 10, device.last_sensor_time)
 
-
-
+    @unittest.skip('need write')
+    def test_subscriptions(self):
+        raise NotImplementedError

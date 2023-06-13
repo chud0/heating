@@ -71,6 +71,10 @@ class BaseAbstractMqttDevice(AbstractDevice, abc.ABC):
             raise errors.DeviceDisabledError(f'Device {self} is disabled, can not turn on')
         self._turned_on = value
 
+    @property
+    def sensor_topic(self):
+        return self._sensor_topic
+
     def turn_on(self) -> typing.List[MqttMessageSend]:
         if self.turned_on:
             return []
@@ -124,6 +128,21 @@ class BaseDevice(BaseAbstractMqttDevice):
         self.state_changed_timeout = state_changed_timeout
 
         self._last_dependencies_turned_on_time = time.time()
+
+    def get_topics_subscriptions(self):
+        subscription = super().get_topics_subscriptions()
+        topics_for_subscriptions = {t for t, _ in subscription}
+        for dv in self._dependencies:
+            if dv.sensor_topic in topics_for_subscriptions:
+                continue
+            subscription.append((dv.sensor_topic, self.check_need_work_on_dependency_sensor))
+            topics_for_subscriptions.add(dv.sensor_topic)
+        return subscription
+
+    def check_need_work_on_dependency_sensor(self, _):
+        if not self.is_need_work:
+            return self.turn_off()
+        return []
 
     @property
     def enabled(self):

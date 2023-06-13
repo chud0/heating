@@ -6,7 +6,7 @@ from ._base import BaseDevice
 
 
 class Pump(BaseDevice):
-    def __call__(self, *args, **kwargs) -> typing.List[messages.events.MqttMessageSend]:
+    def check_need_work_on_dependency_sensor(self, _) -> typing.List[messages.events.MqttMessageSend]:
         if self.is_need_work:
             return self.turn_on()
 
