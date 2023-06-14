@@ -130,13 +130,20 @@ class BaseDevice(BaseAbstractMqttDevice):
         self._last_dependencies_turned_on_time = time.time()
 
     def get_topics_subscriptions(self):
+        """
+        Здесь устройство подписывается на топики сенсоров устройств от которых зависит, для того чтобы обработать
+        события вместе с ними. Обработка идет после выполнения в зависимых устройствах, для того чтобы учесть изменения
+        их состояний.
+        """
         subscription = super().get_topics_subscriptions()
         topics_for_subscriptions = {t for t, _ in subscription}
         for dv in self._dependencies:
-            if dv.sensor_topic in topics_for_subscriptions:
-                continue
-            subscription.append((dv.sensor_topic, self.check_need_work_on_dependency_sensor))
-            topics_for_subscriptions.add(dv.sensor_topic)
+            for topic, _ in dv.get_topics_subscriptions():
+                if topic in topics_for_subscriptions:
+                    continue
+                subscription.append((topic, self.check_need_work_on_dependency_sensor))
+                topics_for_subscriptions.add(topic)
+
         return subscription
 
     def check_need_work_on_dependency_sensor(self, _):

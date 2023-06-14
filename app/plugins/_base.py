@@ -32,6 +32,9 @@ class EventExchange:
         # from exchange
         return self.outgoing_message_queue.get(timeout=timeout, block=False)
 
+    def is_empty(self):
+        return self.incoming_message_queue.empty() and self.outgoing_message_queue.empty()
+
     def __repr__(self):
         return (
             f'{self.__class__.__name__} '

@@ -20,9 +20,14 @@ class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
         self.assertEqual('0', message.payload)
         self.assertEqual(topic, message.topic)
 
+    def assert_device_turned_on(self, device):
+        self.assertTrue(device.turned_on, msg='Device must be turned on')
+
+    def assert_device_turned_off(self, device):
+        self.assertFalse(device.turned_on, msg='Device must be turned off')
+
     def assert_exchange_empty(self, exchange):
-        with self.assertRaises(Empty):
-            exchange.get()
+        self.assertTrue(exchange.is_empty())
 
     def build_plugin_with_devices(self, devices):
         settings = {
@@ -66,7 +71,11 @@ class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
         self.assert_exchange_empty(event_exchange)
 
     def test_plugin_with_dependency_devices(self):
-        # subscribe, ...
+        """
+        Тест на проверку работы плагина с устройствами, зависящими от других устройств.
+        При включении устройства с зависимостью, включаются все устройства от которых оно зависит.
+        При выключении устройства с зависимостью, выключаются все устройства которые от него зависят.
+        """
         devices = {
             'devices.thermostat.Thermostat':
                 [
@@ -96,12 +105,11 @@ class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
 
         plugin, event_exchange = self.build_plugin_with_devices(devices=devices)
 
-        # subscribe to sensor and dependencies sensors
-        event_exchange.get()
-        event_exchange.get()
-        event_exchange.get()
-        event_exchange.get()
+        # subscribe to sensor and dependencies sensors. don't check it here
+        while not event_exchange.is_empty():
+            event_exchange.get()
 
+        # put message for turn on devices, check turn on device with dependency
         event_exchange.put(MqttMessageReceived(topic='whd_sensor', payload='25'))
         event_exchange.put(MqttMessageReceived(topic='wd_sensor', payload='25'))
         plugin._before_tick()
@@ -115,7 +123,7 @@ class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
         self.assert_exchange_empty(event_exchange)
 
         for dv in plugin.devices:
-            self.assertTrue(dv.turned_on)
+            self.assert_device_turned_on(dv)
 
         plugin.tick()
 
@@ -128,12 +136,9 @@ class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
         self.assert_turn_off_device_message(without_dependencies_device_msg, 'whd_hardware_test')
         with_dependencies_device_msg = event_exchange.get()
         self.assert_turn_off_device_message(with_dependencies_device_msg, 'wd_hardware_test')
+        pump_device_msg = event_exchange.get()
+        self.assert_turn_off_device_message(pump_device_msg, 'pmp_hardware_test')
         self.assert_exchange_empty(event_exchange)
 
-        plugin.tick()  # pump turn oFF
-
-        # pump_device_msg = event_exchange.get()
-        # self.assert_turn_off_device_message(pump_device_msg, 'pmp_hardware_test')
-        # self.assert_exchange_empty(event_exchange)
-        #
-        # # todo: continue
+        for dv in plugin.devices:
+            self.assert_device_turned_off(dv)
