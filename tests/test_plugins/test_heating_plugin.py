@@ -1,35 +1,24 @@
 import unittest.mock
 from queue import Empty, Queue
 
+import yaml
 from messages.events import MqttMessageReceived, MqttMessageSend, MqttSubscribe
 from plugins import EventExchange, UnderFloorHeatingMixerPlugin
 
-from tests.common import TimeMockTestMixin
+from tests.common import TestDeviceMixin, TimeMockTestMixin
 
 
-class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
+class TestUnderFloorHeatingMixerPlugin(TestDeviceMixin, TimeMockTestMixin, unittest.TestCase):
     module_reference = 'devices.thermostat.time'
 
-    def assert_turn_on_device_message(self, message, topic):
-        self.assertTrue(isinstance(message, MqttMessageSend))
-        self.assertEqual('1', message.payload)
-        self.assertEqual(topic, message.topic)
-
-    def assert_turn_off_device_message(self, message, topic):
-        self.assertTrue(isinstance(message, MqttMessageSend))
-        self.assertEqual('0', message.payload)
-        self.assertEqual(topic, message.topic)
-
-    def assert_device_turned_on(self, device):
-        self.assertTrue(device.turned_on, msg='Device must be turned on')
-
-    def assert_device_turned_off(self, device):
-        self.assertFalse(device.turned_on, msg='Device must be turned off')
-
     def assert_exchange_empty(self, exchange):
-        self.assertTrue(exchange.is_empty())
+        self.assertTrue(exchange.is_empty(), msg='Exchange must be empty')
 
-    def build_plugin_with_devices(self, devices):
+    def build_plugin_with_devices(self, devices: str):
+        """
+        :param devices: in yaml format
+        """
+        devices = yaml.load(devices, Loader=yaml.FullLoader)
         settings = {
             '.UnderFloorHeatingMixerPlugin': {
                 'devices': devices
@@ -44,30 +33,61 @@ class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
 
     def test_plugin_base(self):
         # start\stop test
-        plugin, _ = self.build_plugin_with_devices(devices={})
+        plugin, _ = self.build_plugin_with_devices(devices='{}')
 
         plugin.start()
         plugin.stop()
 
     def test_start_procedure(self):
         # subscribe, device enable, ...
-        devices = {
-            'devices.thermostat.Thermostat':
-                [
-                    {
-                        'name': 'without_dependecy',
-                        'sensor_topic': 'sensor_test',
-                        'hardware_topic': 'hardware_test',
-                        'target_temperature': 25,
-                    },
-                ],
-        }
-
+        devices = """
+        devices.thermostat.Thermostat:
+          - name: without_dependency
+            sensor_topic: sensor_test
+            hardware_topic: hardware_test
+            target_temperature: 25
+        """
         plugin, event_exchange = self.build_plugin_with_devices(devices=devices)
 
         subscribe_msg = event_exchange.get()
-        self.assertTrue(isinstance(subscribe_msg, MqttSubscribe))
-        self.assertEqual(subscribe_msg.topic, 'sensor_test')
+        self.assert_subscribe_message(subscribe_msg, 'sensor_test')
+        self.assert_exchange_empty(event_exchange)
+
+    def test_start_with_dependency(self):
+        """
+        Проверка старта плагина с устройствами, зависящими от других устройств.
+        Устройства должны подписаться на топики сенсоров зависимых устройств.
+        """
+        devices = """
+        devices.thermostat.Thermostat:
+          - name: without_dependency
+            sensor_topic: whd_sensor
+            hardware_topic: whd_hardware_test
+            target_temperature: 25
+          - name: with_dependency
+            sensor_topic: wd_sensor
+            hardware_topic: wd_hardware_test
+            target_temperature: 25
+            dependencies: [without_dependency]
+          - name: om_with_dependency
+            sensor_topic: om_wd_sensor
+            hardware_topic: om_wd_hardware_test
+            target_temperature: 25
+            dependencies: [with_dependency]
+        """
+        plugin, event_exchange = self.build_plugin_with_devices(devices=devices)
+
+        # subscribe without_dependency device
+        self.assert_subscribe_message(event_exchange.get(), 'whd_sensor')
+
+        # subscribe with_dependency device
+        self.assert_subscribe_message(event_exchange.get(), 'wd_sensor')
+        self.assert_subscribe_message(event_exchange.get(), 'whd_sensor')
+
+        # subscribe om_with_dependency device
+        self.assert_subscribe_message(event_exchange.get(), 'om_wd_sensor')
+        self.assert_subscribe_message(event_exchange.get(), 'wd_sensor')
+        self.assert_subscribe_message(event_exchange.get(), 'whd_sensor')
         self.assert_exchange_empty(event_exchange)
 
     def test_plugin_with_dependency_devices(self):
@@ -76,33 +96,22 @@ class TestUnderFloorHeatingMixerPlugin(TimeMockTestMixin, unittest.TestCase):
         При включении устройства с зависимостью, включаются все устройства от которых оно зависит.
         При выключении устройства с зависимостью, выключаются все устройства которые от него зависят.
         """
-        devices = {
-            'devices.thermostat.Thermostat':
-                [
-                    {
-                        'name': 'with_dependecy',
-                        'sensor_topic': 'wd_sensor',
-                        'hardware_topic': 'wd_hardware_test',
-                        'target_temperature': 25,
-                        'dependencies': ['without_dependecy'],
-                    },
-                    {
-                        'name': 'without_dependecy',
-                        'sensor_topic': 'whd_sensor',
-                        'hardware_topic': 'whd_hardware_test',
-                        'target_temperature': 25,
-                    },
-                ],
-            'devices.pump.Pump':
-                [
-                    {
-                        'name': 'pump',
-                        'hardware_topic': 'pmp_hardware_test',
-                        'dependencies': ['with_dependecy'],
-                    },
-                ],
-        }
-
+        devices = """
+        devices.thermostat.Thermostat:
+          - name: without_dependency
+            sensor_topic: whd_sensor
+            hardware_topic: whd_hardware_test
+            target_temperature: 25
+          - name: with_dependency
+            sensor_topic: wd_sensor
+            hardware_topic: wd_hardware_test
+            target_temperature: 25
+            dependencies: [without_dependency]
+        devices.pump.Pump:
+          - name: pump
+            hardware_topic: pmp_hardware_test
+            dependencies: [with_dependency]
+        """
         plugin, event_exchange = self.build_plugin_with_devices(devices=devices)
 
         # subscribe to sensor and dependencies sensors. don't check it here

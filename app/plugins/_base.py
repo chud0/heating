@@ -87,21 +87,6 @@ class BasePlugin(Thread):
         pass
 
 
-def handle_event(event_class: Type[BaseEvent]):
-    # fixme: not work it!
-    def inner(handler: Callable):
-        d = dir(handler)
-        dct = handler.__dict__
-        cls = handler.__class__
-        if not getattr(cls, 'event_handlers', None):
-            raise TypeError(f'{cls} not have required special object "event_handlers"')
-
-        cls.event_handlers[event_class].append(handler)
-        return handler
-
-    return inner
-
-
 class BaseEventPlugin(BasePlugin, ABC):
     def __init__(self, event_exchange: EventExchange, *args, settings=None, **kwargs):
         super().__init__(*args, **kwargs)

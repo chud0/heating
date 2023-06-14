@@ -57,6 +57,18 @@ class TestBaseDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase):
             [('sensor_topic', device_with_sensor.on_sensor_data_receive)],
         )
 
+    def test_get_topics_subscriptions_with_dependencies(self):
+        """
+        Тест на то что подписки не повторяются, несмотря на то что устройство зависит от другого устройства
+        """
+        dep_device = BaseDevice(name='without_dep', hardware_topic='hardware_topic', sensor_topic='sensor_topic')
+        device = BaseDevice(name='with_dep', hardware_topic='hardware_topic', sensor_topic='sensor_topic', dependencies=[dep_device])
+
+        subscriptions = device.get_topics_subscriptions()
+        self.assertEqual(len(subscriptions), 1)
+        topic, callback = subscriptions[0]
+        self.assertEqual(topic, 'sensor_topic')
+
     def test_need_work(self):
         device = BaseDevice(name='without_dep', hardware_topic='hardware_topic')
         device.enable()
@@ -99,7 +111,3 @@ class TestBaseDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase):
 
         self.time_mock.sleep(10)
         self.assertEqual(self.time_mock.time() - 10, device.last_sensor_time)
-
-    @unittest.skip('need write')
-    def test_subscriptions(self):
-        raise NotImplementedError

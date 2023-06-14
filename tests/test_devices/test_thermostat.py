@@ -41,7 +41,7 @@ class TestThermostatDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase
 
         # turn on, after run; 23 > 21
         messages = self.send_temp_to_device(21, forward_seconds=0)
-        self.assert_messages_turn_on_device(messages)
+        self.assert_turn_on_device_messages(messages)
         self.assert_device_turned_on()
 
         # stay enabled; 23 > 22
@@ -50,7 +50,7 @@ class TestThermostatDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase
 
         # turn off; 23 == 23
         messages = self.send_temp_to_device(23, forward_seconds=5)
-        self.assert_messages_turn_off_device(messages)
+        self.assert_turn_off_device_messages(messages)
         self.assert_device_turned_off()
 
     def test_turn_off_on_temp_quick_get_up(self):
@@ -62,7 +62,7 @@ class TestThermostatDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase
             messages = self.send_temp_to_device(10.5, forward_seconds=1)
         self.assert_words_in(['quick', 'temp'], cm.output[0])
 
-        self.assert_messages_turn_off_device(messages)
+        self.assert_turn_off_device_messages(messages)
         self.assert_device_turned_off()
 
     def test_enabled_when_hysteresis_zone_and_temp_get_down(self):
@@ -73,5 +73,5 @@ class TestThermostatDevice(TimeMockTestMixin, TestDeviceMixin, unittest.TestCase
         self.assert_messages_not_change_state_device(messages)
 
         messages = self.send_temp_to_device(24)
-        self.assert_messages_turn_on_device(messages)
+        self.assert_turn_on_device_messages(messages)
         self.assert_device_turned_on()

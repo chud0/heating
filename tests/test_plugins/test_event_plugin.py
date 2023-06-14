@@ -3,7 +3,7 @@ import unittest.mock
 from queue import Queue
 
 from messages import BaseEvent
-from plugins import BaseEventPlugin, EventExchange, handle_event
+from plugins import BaseEventPlugin, EventExchange
 
 
 class TestEvent(BaseEvent):
@@ -77,28 +77,3 @@ class TestEventPlugin(unittest.TestCase):
         self.test_plugin._before_tick()
 
         handler.assert_not_called()
-
-
-class DummyEventPlugin(BaseEventPlugin):
-    def tick(self) -> None:
-        pass
-
-    # @handle_event(BaseEvent)
-    def resend_message(self, event):
-        self.send_event(event)
-
-
-class TestHandleEventDeco(unittest.TestCase):
-    def setUp(self):
-        self.event_exchange = EventExchange(incoming_message_queue=Queue(), outgoing_message_queue=Queue())
-        self.test_plugin = DummyEventPlugin(event_exchange=self.event_exchange)
-
-    @unittest.skip('before repair')
-    def test_ok(self):
-        event = BaseEvent()
-        self.event_exchange.put(event)
-
-        self.test_plugin._before_tick()
-
-        incoming_message = self.event_exchange.get()
-        self.assertIs(event, incoming_message)

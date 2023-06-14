@@ -1,6 +1,6 @@
 import unittest.mock
 
-from messages.events import MqttMessageSend
+from messages.events import MqttMessageSend, MqttSubscribe
 
 from .mocks import TimeModulePatcher
 
@@ -14,15 +14,19 @@ class TimeMockTestMixin(unittest.TestCase):
         self.time_patch = unittest.mock.patch(self.module_reference, new_callable=TimeModulePatcher)
 
     def setUp(self):
+        super().setUp()
         self.time_mock: TimeModulePatcher = self.time_patch.start()
 
     def tearDown(self) -> None:
+        super().tearDown()
         self.time_patch.stop()
 
 
 class TestDeviceMixin(unittest.TestCase):
     def setUp(self) -> None:
         self._test_device = None
+
+        super().setUp()
 
     @property
     def test_device(self):
@@ -58,22 +62,28 @@ class TestDeviceMixin(unittest.TestCase):
         device = device or self.test_device
         self.assertFalse(device.is_need_work, msg=msg)
 
-    def assert_messages_turn_on_device(self, messages, topic=None, msg=None):
-        self.assertEqual(1, len(messages), msg=msg)
+    def assert_subscribe_message(self, message, topic):
+        self.assertTrue(isinstance(message, MqttSubscribe), msg=f'Message must be MqttSubscribe, not <{type(message)}>')
+        self.assertEqual(topic, message.topic, msg=f'Topic must be equal to <{topic}>')
 
+    def assert_turn_on_device_message(self, message, topic=None, msg=None):
+        self.assertTrue(isinstance(message, MqttMessageSend), msg=msg)
+        self.assertEqual('1', message.payload, msg=msg)
+        if topic:
+            self.assertEqual(topic, message.topic, msg=msg)
+
+    def assert_turn_on_device_messages(self, messages, topic=None, msg=None):
+        self.assertEqual(1, len(messages), msg=msg)
         turn_on_message = messages[0]
-        self.assertIsInstance(turn_on_message, MqttMessageSend, msg=msg)
-        self.assertEqual('1', turn_on_message.payload, msg=msg)
+        self.assert_turn_on_device_message(turn_on_message, topic=topic, msg=msg)
 
+    def assert_turn_off_device_message(self, message, topic=None, msg=None):
+        self.assertTrue(isinstance(message, MqttMessageSend), msg=msg)
+        self.assertEqual('0', message.payload, msg=msg)
         if topic:
-            self.assertEqual(topic, turn_on_message.topic, msg=msg)
+            self.assertEqual(topic, message.topic, msg=msg)
 
-    def assert_messages_turn_off_device(self, messages, topic=None, msg=None):
+    def assert_turn_off_device_messages(self, messages, topic=None, msg=None):
         self.assertEqual(1, len(messages), msg=msg)
-
         turn_off_message = messages[0]
-        self.assertIsInstance(turn_off_message, MqttMessageSend, msg=msg)
-        self.assertEqual('0', turn_off_message.payload, msg=msg)
-
-        if topic:
-            self.assertEqual(topic, turn_off_message.topic, msg=msg)
+        self.assert_turn_off_device_message(turn_off_message, topic=topic, msg=msg)
